@@ -23,7 +23,9 @@ defmodule Cadet.Application do
       worker(Cadet.Jobs.Scheduler, []),
       # Start the Oban instance
       {Oban, Application.fetch_env!(:cadet, Oban)},
-      {Samly.Provider, []}
+      {Samly.Provider, []},
+      # Start the RAG VectorStore for chatbot retrieval-augmented generation
+      {Cadet.Chatbot.Rag.VectorStore, []}
     ]
 
     children =
