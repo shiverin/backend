@@ -62,7 +62,12 @@ defmodule Cadet.Chatbot.Rag.TextSplitter do
   Splits a single text string into chunks.
   """
   @spec split_text(String.t(), pos_integer(), non_neg_integer(), String.t()) :: [String.t()]
-  def split_text(text, chunk_size \\ @default_chunk_size, chunk_overlap \\ @default_chunk_overlap, separator \\ @default_separator) do
+  def split_text(
+        text,
+        chunk_size \\ @default_chunk_size,
+        chunk_overlap \\ @default_chunk_overlap,
+        separator \\ @default_separator
+      ) do
     # First split by separator to get natural segments
     segments = String.split(text, separator)
 

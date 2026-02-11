@@ -89,7 +89,9 @@ defmodule Cadet.Chatbot.Rag.DocumentLoader do
       file_paths
       |> Enum.flat_map(fn path ->
         case load_file(path) do
-          {:ok, doc} -> [doc]
+          {:ok, doc} ->
+            [doc]
+
           {:error, reason} ->
             Logger.warning("Skipping file #{path}: #{reason}")
             []

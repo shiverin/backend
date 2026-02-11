@@ -76,7 +76,8 @@ defmodule CadetWeb.ChatController do
          {:ok, conversation} <- LlmConversations.get_conversation_for_user(user.id),
          {:ok, updated_conversation} <-
            LlmConversations.add_message(conversation, "user", user_message),
-         system_prompt <- Cadet.Chatbot.PromptBuilder.build_prompt(section, visible_text, user_message),
+         system_prompt <-
+           Cadet.Chatbot.PromptBuilder.build_prompt(section, visible_text, user_message),
          payload <- generate_payload(updated_conversation, system_prompt) do
       case OpenAI.chat_completion(model: "gpt-4", messages: payload) do
         {:ok, result_map} ->

@@ -52,7 +52,10 @@ defmodule Cadet.Chatbot.PromptBuilder do
     if Rag.store_count() > 0 do
       case Rag.retrieve_context(user_message, top_k: 10) do
         {:ok, context} when context != "" ->
-          Logger.info("RAG context injected into prompt for query: #{String.slice(user_message, 0..50)}")
+          Logger.info(
+            "RAG context injected into prompt for query: #{String.slice(user_message, 0..50)}"
+          )
+
           IO.puts("RAG retrieved:\n#{context}")
           @rag_prefix <> context
 
