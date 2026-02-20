@@ -81,12 +81,20 @@ defmodule CadetWeb.Router do
     get("/devices/:id/ws_endpoint", DevicesController, :get_ws_endpoint)
   end
 
-  # LLM-related endpoints
+  # LLM-related endpoints (Louis — SICP chatbot)
   scope "/v2/chats", CadetWeb do
     pipe_through([:api, :auth, :ensure_auth, :rate_limit])
 
     post("", ChatController, :init_chat)
     post("/message", ChatController, :chat)
+  end
+
+  # Pixel — general-purpose context-aware chatbot
+  scope "/v2/pixel", CadetWeb do
+    pipe_through([:api, :auth, :ensure_auth, :rate_limit])
+
+    post("", PixelChatController, :init_chat)
+    post("/message", PixelChatController, :chat)
   end
 
   # Authenticated Pages with course
