@@ -20,6 +20,10 @@ defmodule CadetWeb.Router do
     plug(CadetWeb.Plugs.RateLimiter)
   end
 
+  pipeline :guest_rate_limit do
+    plug(CadetWeb.Plugs.GuestRateLimiter)
+  end
+
   pipeline :course do
     plug(:assign_course)
   end
@@ -81,11 +85,17 @@ defmodule CadetWeb.Router do
     get("/devices/:id/ws_endpoint", DevicesController, :get_ws_endpoint)
   end
 
-  # LLM-related endpoints
+  scope "/v2/chats/guest", CadetWeb do
+    pipe_through([:api, :guest_rate_limit])
+
+    post("/", ChatController, :init_guest_chat)
+    post("/message", ChatController, :guest_chat)
+  end
+
   scope "/v2/chats", CadetWeb do
     pipe_through([:api, :auth, :ensure_auth, :rate_limit])
 
-    post("", ChatController, :init_chat)
+    post("/", ChatController, :init_chat)
     post("/message", ChatController, :chat)
   end
 

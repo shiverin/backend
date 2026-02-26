@@ -83,13 +83,18 @@ defmodule Cadet.Chatbot.LlmConversations do
   end
 
   def add_message(conversation, role, content) do
-    case conversation
-         |> Conversation.changeset(%{
-           messages:
-             conversation.messages ++
-               [%{role: role, content: content, created_at: DateTime.utc_now()}]
-         })
-         |> Repo.update() do
+    updated_messages =
+      conversation.messages ++
+        [%{role: role, content: content, created_at: DateTime.utc_now()}]
+
+    changeset =
+      if conversation.guest_uuid do
+        Conversation.guest_changeset(conversation, %{messages: updated_messages})
+      else
+        Conversation.changeset(conversation, %{messages: updated_messages})
+      end
+
+    case Repo.update(changeset) do
       {:ok, updated} -> {:ok, updated}
       {:error, changeset} -> {:error, full_error_messages(changeset)}
     end
@@ -99,6 +104,68 @@ defmodule Cadet.Chatbot.LlmConversations do
 
   def add_error_message(conversation) do
     add_message(conversation, "system", @system_error_message)
+  end
+
+  @spec get_conversation_for_guest(String.t()) ::
+          {:ok, Conversation.t()} | {:error, {:not_found, String.t()}}
+  def get_conversation_for_guest(guest_uuid) when is_binary(guest_uuid) do
+    Logger.debug("Fetching conversation for guest #{guest_uuid}")
+
+    case Conversation
+         |> where([c], c.guest_uuid == ^guest_uuid)
+         |> order_by([c], desc: c.inserted_at)
+         |> limit(1)
+         |> Repo.one() do
+      nil ->
+        Logger.debug("No conversation found for guest #{guest_uuid}")
+        {:error, {:not_found, "Conversation not found"}}
+
+      conversation ->
+        Logger.debug("Found conversation #{conversation.id} for guest #{guest_uuid}")
+        {:ok, conversation}
+    end
+  end
+
+  @spec get_or_create_conversation_for_guest(String.t()) ::
+          {:ok, Conversation.t()} | {:error, String.t()}
+  def get_or_create_conversation_for_guest(guest_uuid) when is_binary(guest_uuid) do
+    Logger.debug("Getting or creating conversation for guest #{guest_uuid}")
+
+    case get_conversation_for_guest(guest_uuid) do
+      {:ok, conversation} ->
+        Logger.debug("Guest #{guest_uuid} already has conversation #{conversation.id}")
+        {:ok, conversation}
+
+      {:error, {:not_found, _}} ->
+        Logger.debug("Creating new conversation for guest #{guest_uuid}")
+        create_new_conversation_for_guest(guest_uuid)
+    end
+  end
+
+  @spec create_new_conversation_for_guest(String.t()) ::
+          {:ok, Conversation.t()} | {:error, String.t()}
+  defp create_new_conversation_for_guest(guest_uuid) do
+    Logger.debug("Creating a new conversation for guest #{guest_uuid}")
+
+    case %Conversation{
+           guest_uuid: guest_uuid,
+           prepend_context: [],
+           messages: [get_initial_message()]
+         }
+         |> Conversation.guest_changeset(%{})
+         |> Repo.insert() do
+      {:ok, conversation} ->
+        Logger.debug(
+          "Successfully created conversation #{conversation.id} for guest #{guest_uuid}."
+        )
+
+        {:ok, conversation}
+
+      {:error, changeset} ->
+        error_msg = full_error_messages(changeset)
+        Logger.error("Failed to create conversation for guest #{guest_uuid}: #{error_msg}")
+        {:error, error_msg}
+    end
   end
 
   defp get_initial_message do
