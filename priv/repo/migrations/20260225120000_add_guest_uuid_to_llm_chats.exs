@@ -26,7 +26,6 @@ defmodule Cadet.Repo.Migrations.AddGuestUuidToLlmChats do
     create(index(:llm_chats, [:guest_uuid], where: "guest_uuid IS NOT NULL"))
   end
 
-  
   def down do
     execute("DELETE FROM llm_chats WHERE user_id IS NULL")
 
