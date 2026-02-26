@@ -5,7 +5,8 @@ defmodule CadetWeb.Plugs.GuestRateLimiter do
   import Plug.Conn
   require Logger
 
-  @rate_limit 50
+  # Spec: 20 requests per IP per 24h for guests
+  @rate_limit 20
   @period 86_400_000
 
   def rate_limit, do: @rate_limit
@@ -23,9 +24,11 @@ defmodule CadetWeb.Plugs.GuestRateLimiter do
       {:error, limit} ->
         Logger.warning("Guest rate limit of #{limit} exceeded for IP #{ip}")
 
+        error_body = %{error: "Too many requests", limit: limit, period_ms: @period}
+
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(:too_many_requests, Jason.encode!(body))
+        |> send_resp(:too_many_requests, Jason.encode!(error_body))
         |> halt()
     end
   end
